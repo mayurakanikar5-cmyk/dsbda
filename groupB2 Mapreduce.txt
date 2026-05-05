@@ -1,0 +1,87 @@
+%%writefile access_log.txt
+192.168.1.1 GET /index.html 200
+192.168.1.2 GET /about.html 404
+192.168.1.3 POST /login.html 200
+192.168.1.4 GET /index.html 500
+192.168.1.5 GET /contact.html 200
+192.168.1.6 POST /login.html 404
+192.168.1.7 GET /index.html 200
+192.168.1.8 GET /about.html 200
+192.168.1.9 GET /index.html 404
+192.168.1.10 POST /home.html 500
+
+
+
+%%writefile LogAnalyzer.java
+import java.util.*;
+import java.io.*;
+
+public class LogAnalyzer {
+
+    static String map(String line) {
+        String[] parts = line.trim().split("\\s+");
+        return parts[parts.length - 1];
+    }
+
+    static Map<String, Integer> reduce(Map<String, List<Integer>> grouped) {
+        Map<String, Integer> result = new TreeMap<>();
+        for (String key : grouped.keySet()) {
+            int count = 0;
+            for (int val : grouped.get(key)) count += val;
+            result.put(key, count);
+        }
+        return result;
+    }
+
+    public static void main(String[] args) throws Exception {
+
+        BufferedReader br = new BufferedReader(new FileReader("access_log.txt"));
+        List<String> lines = new ArrayList<>();
+        String line;
+        while ((line = br.readLine()) != null) lines.add(line);
+        br.close();
+
+        System.out.println("--- INPUT LOG FILE ---");
+        for (String l : lines)
+            System.out.println(l);
+
+        // Map phase
+        List<String[]> mapOutput = new ArrayList<>();
+        System.out.println("\n--- MAP OUTPUT (status_code, 1) ---");
+        for (String l : lines) {
+            String status = map(l);
+            System.out.println("(" + status + ", 1)");
+            mapOutput.add(new String[]{status, "1"});
+        }
+
+        // Shuffle and sort
+        Map<String, List<Integer>> shuffled = new TreeMap<>();
+        for (String[] pair : mapOutput)
+            shuffled.computeIfAbsent(pair[0], k -> new ArrayList<>()).add(1);
+
+        System.out.println("\n--- SHUFFLE & SORT OUTPUT ---");
+        for (String key : shuffled.keySet())
+            System.out.println("(" + key + ", " + shuffled.get(key) + ")");
+
+        // Reduce phase
+        Map<String, Integer> output = reduce(shuffled);
+        System.out.println("\n--- FINAL OUTPUT ---");
+        System.out.println(String.format("%-15s %s", "STATUS CODE", "COUNT"));
+        for (String key : output.keySet())
+            System.out.println(String.format("%-15s %d", key, output.get(key)));
+    }
+}
+
+
+
+
+
+
+!javac LogAnalyzer.java
+
+
+
+
+
+
+!java LogAnalyzer

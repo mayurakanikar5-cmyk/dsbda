@@ -1,0 +1,82 @@
+%%writefile input.txt
+Hello World
+Hello Hadoop
+Hadoop is great
+World is beautiful
+
+
+
+
+
+%%writefile WordCount.java
+import java.util.*;
+import java.io.*;
+
+public class WordCount {
+
+    // MAP PHASE
+    static List<String[]> map(String line) {
+        List<String[]> pairs = new ArrayList<>();
+        for (String word : line.trim().split("\\s+")) {
+            pairs.add(new String[]{word.toLowerCase(), "1"});
+        }
+        return pairs;
+    }
+
+    // REDUCE PHASE
+    static Map<String, Integer> reduce(Map<String, List<Integer>> grouped) {
+        Map<String, Integer> result = new TreeMap<>();
+        for (String word : grouped.keySet()) {
+            int count = 0;
+            for (int val : grouped.get(word)) count += val;
+            result.put(word, count);
+        }
+        return result;
+    }
+
+    public static void main(String[] args) throws Exception {
+
+        // Read input file
+        BufferedReader br = new BufferedReader(new FileReader("input.txt"));
+        List<String> lines = new ArrayList<>();
+        String line;
+        while ((line = br.readLine()) != null) lines.add(line);
+        br.close();
+
+        // MAP
+        List<String[]> mapOutput = new ArrayList<>();
+        System.out.println("--- MAP OUTPUT ---");
+        for (String l : lines) {
+            for (String[] pair : map(l)) {
+                System.out.println("(" + pair[0] + ", " + pair[1] + ")");
+                mapOutput.add(pair);
+            }
+        }
+
+        // SHUFFLE & SORT
+        Map<String, List<Integer>> shuffled = new TreeMap<>();
+        for (String[] pair : mapOutput)
+            shuffled.computeIfAbsent(pair[0], k -> new ArrayList<>()).add(1);
+
+        System.out.println("\n--- SHUFFLE OUTPUT ---");
+        for (String w : shuffled.keySet())
+            System.out.println("(" + w + ", " + shuffled.get(w) + ")");
+
+        // REDUCE
+        Map<String, Integer> output = reduce(shuffled);
+        System.out.println("\n--- FINAL WORD COUNT ---");
+        for (String w : output.keySet())
+            System.out.println(w + " : " + output.get(w));
+    }
+}
+
+
+
+
+
+
+!javac WordCount.java
+
+
+
+!java WordCount

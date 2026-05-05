@@ -1,0 +1,90 @@
+%%writefile sample_weather.txt
+2023-01-01 Temperature:32 DewPoint:20 WindSpeed:10
+2023-01-02 Temperature:35 DewPoint:22 WindSpeed:15
+2023-01-03 Temperature:30 DewPoint:18 WindSpeed:12
+2023-01-04 Temperature:28 DewPoint:15 WindSpeed:8
+2023-01-05 Temperature:33 DewPoint:21 WindSpeed:11
+2023-01-06 Temperature:36 DewPoint:24 WindSpeed:14
+2023-01-07 Temperature:29 DewPoint:17 WindSpeed:9
+
+
+
+
+
+%%writefile WeatherAnalysis.java
+import java.util.*;
+import java.io.*;
+
+public class WeatherAnalysis {
+
+    static Map<String, Integer> map(String line) {
+        Map<String, Integer> result = new HashMap<>();
+        String[] parts = line.trim().split("\\s+");
+        for (String part : parts) {
+            if (part.startsWith("Temperature:"))
+                result.put("Temperature", Integer.parseInt(part.split(":")[1]));
+            else if (part.startsWith("DewPoint:"))
+                result.put("DewPoint", Integer.parseInt(part.split(":")[1]));
+            else if (part.startsWith("WindSpeed:"))
+                result.put("WindSpeed", Integer.parseInt(part.split(":")[1]));
+        }
+        return result;
+    }
+
+    public static void main(String[] args) throws Exception {
+
+        BufferedReader br = new BufferedReader(new FileReader("sample_weather.txt"));
+        List<String> lines = new ArrayList<>();
+        String line;
+        while ((line = br.readLine()) != null) lines.add(line);
+        br.close();
+
+        System.out.println("--- INPUT DATA ---");
+        for (String l : lines)
+            System.out.println(l);
+
+        // Map phase
+        List<Map<String, Integer>> mapOutput = new ArrayList<>();
+        System.out.println("\n--- MAP OUTPUT ---");
+        for (String l : lines) {
+            Map<String, Integer> parsed = map(l);
+            System.out.println("(Temperature, " + parsed.get("Temperature") + ") " +
+                               "(DewPoint, " + parsed.get("DewPoint") + ") " +
+                               "(WindSpeed, " + parsed.get("WindSpeed") + ")");
+            mapOutput.add(parsed);
+        }
+
+        // Shuffle and sort
+        Map<String, List<Integer>> shuffled = new TreeMap<>();
+        for (Map<String, Integer> record : mapOutput) {
+            for (String key : record.keySet())
+                shuffled.computeIfAbsent(key, k -> new ArrayList<>()).add(record.get(key));
+        }
+
+        System.out.println("\n--- SHUFFLE & SORT OUTPUT ---");
+        for (String key : shuffled.keySet())
+            System.out.println("(" + key + ", " + shuffled.get(key) + ")");
+
+        // Reduce phase - calculate average
+        System.out.println("\n--- FINAL OUTPUT (Averages) ---");
+        System.out.println(String.format("%-15s %s", "ATTRIBUTE", "AVERAGE"));
+        System.out.println("-".repeat(25));
+        for (String key : shuffled.keySet()) {
+            List<Integer> values = shuffled.get(key);
+            double avg = 0;
+            for (int v : values) avg += v;
+            avg = avg / values.size();
+            System.out.println(String.format("%-15s %.2f", key, avg));
+        }
+    }
+}
+
+
+
+
+
+!javac WeatherAnalysis.java
+
+
+
+!java WeatherAnalysis

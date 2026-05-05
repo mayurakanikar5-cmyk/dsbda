@@ -1,0 +1,49 @@
+!pip install pyspark
+
+
+
+
+%%writefile input.txt
+Hello World Hello Spark
+Spark is fast and powerful
+Hello PySpark Hello World
+Big Data is processed by Spark
+
+
+
+
+
+from pyspark import SparkContext
+
+sc = SparkContext("local", "WordCount")
+
+# Read file
+lines = sc.textFile("input.txt")
+
+# Map phase - split each line into words
+words = lines.flatMap(lambda line: line.lower().split(" "))
+
+# Map each word to (word, 1)
+pairs = words.map(lambda word: (word, 1))
+
+# Reduce phase - sum counts for each word
+result = pairs.reduceByKey(lambda a, b: a + b)
+
+# Sort and print
+output = sorted(result.collect())
+
+print("--- MAP OUTPUT (word, 1) ---")
+for word, count in pairs.collect():
+    print(f"({word}, 1)")
+
+print("\n--- FINAL OUTPUT (Word Count) ---")
+print(f"{'WORD':<20} COUNT")
+print("-" * 25)
+for word, count in output:
+    print(f"{word:<20} {count}")
+
+sc.stop()
+
+
+
+
